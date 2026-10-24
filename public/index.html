@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Couchtime: watch together</title>
+  <meta name="description" content="Start a room, send the link, and watch videos in perfect sync with chat, voice and screen share.">
+  <meta name="theme-color" content="#15101c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ffb547'/%3E%3Cpath d='M12 8l12 8-12 8z' fill='%232b1a02'/%3E%3C/svg%3E">
+  <link rel="preload" href="/fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="landing">
+  <header class="topbar">
+    <a class="brand" href="/"><span id="brand-mark"></span><span data-app-name>Couchtime</span></a>
+    <span class="spacer"></span>
+    <div id="account" class="row"></div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <section>
+        <h1>Press play together.</h1>
+        <p class="lede">Start a room, send the link, and everyone's video stays on the same second. Chat, talk, or share your screen without leaving the page.</p>
+        <ul class="facts" id="facts"></ul>
+      </section>
+
+      <section class="ticket-wrap" aria-labelledby="create-title">
+        <form class="ticket-main ticket" id="create-form" novalidate>
+          <div class="bulbs" aria-hidden="true" id="bulbs"></div>
+          <h2 id="create-title">Open a room</h2>
+          <div class="stack">
+            <div id="nick-row">
+              <label class="lbl" for="nick">Your nickname</label>
+              <input class="field" id="nick" maxlength="24" autocomplete="nickname" placeholder="What friends will see" dir="auto">
+            </div>
+            <div>
+              <label class="lbl" for="room-name">Room name <span style="font-weight:400">(optional)</span></label>
+              <input class="field" id="room-name" maxlength="40" placeholder="Friday movie night" dir="auto">
+            </div>
+            <details id="more">
+              <summary>More options</summary>
+              <div class="stack" style="margin-top:12px">
+                <div>
+                  <label class="lbl" for="control">Who can press play, pause and seek</label>
+                  <select class="field" id="control">
+                    <option value="everyone">Everyone in the room</option>
+                    <option value="mods">The host and moderators</option>
+                    <option value="host">Only the host</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="lbl" for="room-pass">Room password <span style="font-weight:400">(optional)</span></label>
+                  <input class="field" id="room-pass" type="password" maxlength="64" autocomplete="new-password">
+                </div>
+                <div id="user-only" hidden class="stack">
+                  <div>
+                    <label class="lbl" for="slug">Custom room address <span style="font-weight:400">(optional)</span></label>
+                    <input class="field" id="slug" maxlength="30" placeholder="movie-club" autocapitalize="none" spellcheck="false">
+                  </div>
+                  <label class="row" style="cursor:pointer"><input type="checkbox" id="permanent" checked> <span>Keep this room forever</span></label>
+                </div>
+                <p class="hint" id="guest-note">Create a free account to keep rooms forever and choose your own address.</p>
+              </div>
+            </details>
+            <p class="err" id="create-err" role="alert"></p>
+            <button class="btn btn-ink btn-block" id="create-btn" type="submit" style="padding:13px;font-size:16px">Create room</button>
+          </div>
+        </form>
+
+        <form class="ticket-stub ticket" id="join-form" novalidate>
+          <p class="stub-title">Got an invite?</p>
+          <div class="row">
+            <input class="field" id="code" placeholder="Paste the link or room code" aria-label="Invite link or room code" autocapitalize="none" spellcheck="false">
+            <button class="btn btn-ink" type="submit">Join</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <section class="my-rooms" id="my-rooms" hidden>
+      <h2>Your rooms</h2>
+      <div class="room-list" id="room-list"></div>
+    </section>
+  </main>
+
+  <footer class="site-foot">Rooms made without an account disappear after a day of no visitors.</footer>
+
+  <script type="module" src="/js/landing.js"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Room</title>
+  <meta name="theme-color" content="#15101c">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ffb547'/%3E%3Cpath d='M12 8l12 8-12 8z' fill='%232b1a02'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body class="room">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Home"><span id="brand-mark"></span></a>
+    <h1 class="room-title" id="room-title" dir="auto"></h1>
+    <span class="spacer"></span>
+    <span class="sync-pill" id="net-pill" data-s="wait" hidden><i></i><span id="net-text">Connecting</span></span>
+    <button class="btn btn-sm" id="invite-btn" type="button" hidden></button>
+    <button class="btn btn-sm btn-ghost" id="settings-btn" type="button" hidden></button>
+    <div id="account" class="row"></div>
+  </header>
+
+  <div class="room-main" id="room-main" hidden>
+    <section class="stage-col" id="stage-col">
+      <form class="linkbar" id="link-form" novalidate>
+        <input class="field" id="link-input" placeholder="Paste a YouTube, Vimeo or video link" aria-label="Video link" autocomplete="off" spellcheck="false">
+        <button class="btn btn-primary" id="play-now" type="submit"></button>
+        <button class="btn" id="queue-add" type="button"></button>
+      </form>
+
+      <div class="player-shell" id="shell">
+        <div class="stage" id="stage">
+          <div class="host" id="host"></div>
+          <div class="stage-empty" id="stage-empty">
+            <h2>Nothing playing yet</h2>
+            <p>Paste a link above and press Play now. Everyone in the room will see it start at the same moment.</p>
+          </div>
+          <div class="stage-loading" id="stage-loading" hidden><span class="spinner" aria-label="Loading"></span></div>
+          <div class="shield" id="shield"></div>
+          <div class="flash" id="flash" hidden></div>
+          <div class="screen-view" id="screen-view" hidden>
+            <video id="screen-video" autoplay playsinline></video>
+            <div class="screen-bar">
+              <strong id="screen-who" dir="auto"></strong>
+              <span class="spacer"></span>
+              <button class="btn btn-sm" id="screen-full" type="button">Full screen</button>
+              <button class="btn btn-sm" id="screen-back" type="button">Back to video</button>
+            </div>
+          </div>
+          <div class="ctl" id="ctl"></div>
+          <div class="chat-float" id="chat-float" aria-live="polite">
+            <div class="cf-log" id="cf-log"></div>
+            <form class="cf-form" id="cf-form" autocomplete="off" hidden>
+              <input class="field" id="cf-input" maxlength="500" placeholder="Say something, Enter to send, Esc to close" aria-label="Message" dir="auto">
+            </form>
+          </div>
+          <div class="tap-overlay" id="tap" hidden>
+            <button class="btn btn-primary" id="tap-btn" type="button" style="padding:14px 22px;font-size:17px"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dock" id="dock"></div>
+      <div class="people-strip" id="strip" hidden></div>
+    </section>
+
+    <aside class="side" aria-label="Chat, queue and people">
+      <div class="side-tabs" role="tablist" id="tabs"></div>
+
+      <div class="pane active" id="pane-chat" role="tabpanel">
+        <div class="chat-log" id="chat-log" aria-live="polite"></div>
+        <form class="composer" id="chat-form" autocomplete="off">
+          <input class="field" id="chat-input" maxlength="500" placeholder="Say something" aria-label="Message" dir="auto">
+          <button class="btn btn-primary btn-icon" type="submit" aria-label="Send"></button>
+        </form>
+      </div>
+
+      <div class="pane" id="pane-queue" role="tabpanel">
+        <div class="pane-head">
+          <p class="hint" id="queue-hint">Up next plays after the current video ends.</p>
+          <button class="btn btn-sm btn-ghost" id="queue-clear" type="button" hidden>Clear</button>
+        </div>
+        <div class="list" id="queue-list"></div>
+      </div>
+
+      <div class="pane" id="pane-people" role="tabpanel">
+        <div class="list" id="people-list"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="gate" class="gate" hidden></div>
+  <div id="audio-sink" hidden></div>
+
+  <script type="module" src="/js/room.js"></script>
+</body>
+</html>
