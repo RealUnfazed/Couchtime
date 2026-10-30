@@ -134,8 +134,13 @@ label.lbl { display: block; font-size: 13px; font-weight: 600; color: var(--mute
 .facts span { color: var(--muted); font-size: 14px; }
 
 /* The ticket: the one loud thing on the page. */
-.ticket-wrap { filter: drop-shadow(0 24px 40px rgba(0, 0, 0, .5)); transform: rotate(1.6deg); animation: ticket-in .7s cubic-bezier(.2, .8, .2, 1) both; }
-@keyframes ticket-in { from { opacity: 0; transform: translateY(26px) rotate(5deg); } to { opacity: 1; transform: translateY(0) rotate(1.6deg); } }
+/* The card stays perfectly straight and has no filter or transform once it has arrived. A permanent tilt
+   plus a drop-shadow filter makes the browser draw the whole card as a rotated bitmap, which blurs the
+   text. So: the entrance animation only runs on the way in (fill-mode "backwards" leaves nothing behind),
+   and the shadow is a separate blurred layer behind the card instead of a filter on it. */
+.ticket-wrap { position: relative; isolation: isolate; animation: ticket-in .7s cubic-bezier(.2, .8, .2, 1) backwards; }
+.ticket-wrap::before { content: ''; position: absolute; z-index: -1; inset: 18px 14px -14px; border-radius: 28px; background: rgba(0, 0, 0, .5); filter: blur(30px); pointer-events: none; }
+@keyframes ticket-in { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: translateY(0); } }
 .ticket-main, .ticket-stub { background: var(--amber); color: var(--amber-ink); position: relative; }
 .ticket-main {
   border-radius: 16px 16px 0 0; padding: 18px 26px 24px;
@@ -379,10 +384,8 @@ body.room { height: 100dvh; display: flex; flex-direction: column; overflow: hid
   .side { border-left: 0; border-top: 1px solid var(--line); height: 70dvh; min-height: 440px; }
   .hero { grid-template-columns: 1fr; padding-top: 12px; }
   .hero h1 { max-width: 12ch; }
-  .ticket-wrap { transform: none; animation-name: ticket-in-flat; }
   .room-title { max-width: 40vw; }
 }
-@keyframes ticket-in-flat { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
 @media (max-width: 560px) {
   .topbar { padding: 0 12px; gap: 8px; }
   .btn .label-long { display: none; }
