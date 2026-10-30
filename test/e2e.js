@@ -476,6 +476,41 @@ async function joinRoom(page, url, name) {
     await C.ctx.close(); await D.ctx.close();
   });
 
+  await step('signed-in people never see the guest sign-in bits, guests are labelled as guests', async () => {
+    const U = await mk();
+    const name = `signed${Date.now().toString(36)}`;
+    const r = await U.ctx.request.post(`${BASE}/api/auth/register`, { data: { username: name, password: 'correct horse battery', displayName: 'Dana' } });
+    if (r.status() !== 201) throw new Error(`register ${r.status()}`);
+    const visible = (page, sel) => page.evaluate((q) => { const e = document.querySelector(q); if (!e) return false; const cs = getComputedStyle(e); return cs.display !== 'none' && cs.visibility !== 'hidden' && e.getBoundingClientRect().height > 0; }, sel);
+    await U.page.goto(BASE);
+    await waitFor(async () => U.page.evaluate(() => document.documentElement.dataset.kind === 'user'), { label: 'the page to learn it is a signed-in user' });
+    // A slow server (a Vercel cold start) must not bring the guest form back while the page waits to hear who this is.
+    await U.page.route('**/api/auth/me', async (route) => { await sleep(1500); route.continue(); });
+    await U.page.reload({ waitUntil: 'commit' });
+    await sleep(600);
+    if (await visible(U.page, '#nick-row')) throw new Error('the nickname box showed while the session was still loading');
+    if (await visible(U.page, '#guest-note')) throw new Error('the "create a free account" note showed while the session was still loading');
+    await waitFor(async () => (await U.page.textContent('#account')).includes('Dana'), { timeout: 8000, label: 'the name in the top bar' });
+    if ((await U.page.textContent('#account')).includes('Sign in')) throw new Error('a signed-in user still sees a Sign in button');
+    if ((await U.page.textContent('#account')).includes('Guest')) throw new Error('a signed-in user is labelled as a guest');
+    if (await visible(U.page, '#nick-row')) throw new Error('the nickname box is visible for a signed-in user');
+    await U.page.click('#more summary');
+    if (!(await visible(U.page, '#slug'))) throw new Error('the account-only options are missing');
+    await U.ctx.close();
+
+    const G = await mk();
+    await G.page.goto(BASE);
+    await G.page.fill('#nick', 'Guesty');
+    await G.page.click('#create-btn');
+    await G.page.waitForURL(/\/r\/[a-z0-9]+$/);
+    await G.page.goto(BASE);
+    await waitFor(async () => (await G.page.textContent('#account')).includes('Guesty'), { label: 'the guest name' });
+    const top = await G.page.textContent('#account');
+    if (!top.includes('Guest') || !top.includes('Sign in')) throw new Error(`guest top bar reads "${top}"`);
+    if (!(await visible(G.page, '#nick-row'))) throw new Error('a guest lost the nickname box');
+    await G.ctx.close();
+  });
+
   await step('cross-site writes are refused', async () => {
     const res = await A.ctx.request.post(`${BASE}/api/rooms`, { data: { name: 'x' }, headers: { Origin: 'https://evil.example' } });
     if (res.status() !== 403) throw new Error(`expected 403, got ${res.status()}`);

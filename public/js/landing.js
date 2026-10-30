@@ -27,9 +27,8 @@ const el = {
 
 function refresh() {
   const isUser = session.me && session.me.kind === 'user';
-  el.nickRow.hidden = !!isUser;
-  el.userOnly.hidden = !isUser;
-  el.guestNote.hidden = !!isUser;
+  // Which parts of the ticket show for a signed-in person is decided in CSS from <html data-kind>.
+  document.documentElement.dataset.kind = session.me ? session.me.kind : 'none';
   if (!isUser) el.nick.value = el.nick.value || (session.me && session.me.name) || savedName();
   loadMyRooms();
 }

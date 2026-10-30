@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#15101c">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ffb547'/%3E%3Cpath d='M12 8l12 8-12 8z' fill='%232b1a02'/%3E%3C/svg%3E">
   <link rel="preload" href="/fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
+  <script>try { var k = localStorage.getItem('ct_kind'); if (k) document.documentElement.dataset.kind = k; } catch (e) {}</script>
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body class="landing">
@@ -53,7 +54,7 @@
                   <label class="lbl" for="room-pass">Room password <span style="font-weight:400">(optional)</span></label>
                   <input class="field" id="room-pass" type="password" maxlength="64" autocomplete="new-password">
                 </div>
-                <div id="user-only" hidden class="stack">
+                <div id="user-only" class="stack">
                   <div>
                     <label class="lbl" for="slug">Custom room address <span style="font-weight:400">(optional)</span></label>
                     <input class="field" id="slug" maxlength="30" placeholder="movie-club" autocapitalize="none" spellcheck="false">

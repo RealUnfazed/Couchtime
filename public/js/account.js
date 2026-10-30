@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { session, rememberName } from './session.js';
+import { session, setMe, rememberName } from './session.js';
 import { h, icon, avatar, openModal, toast } from './ui.js';
 
 export const COLORS = ['#ff7a8a', '#ffb547', '#9be564', '#4fd1c5', '#63b3ff', '#a78bfa', '#f38bd8', '#ff9966', '#7bdff2', '#c3e88d'];
@@ -53,7 +53,7 @@ export function openAuthModal({ start = 'login', onDone } = {}) {
       const body = { username: user.value.trim(), password: pass.value };
       if (mode === 'register') body.displayName = nick.value;
       const { me } = await api(mode === 'login' ? '/auth/login' : '/auth/register', { method: 'POST', body });
-      session.me = me;
+      setMe(me);
       rememberName(me.name);
       modal.close();
       toast(mode === 'login' ? `Welcome back, ${me.name}.` : `Account created. Welcome, ${me.name}.`);
@@ -83,7 +83,7 @@ export function openProfileModal({ onDone } = {}) {
   const extra = me.kind === 'user'
     ? h('button', { class: 'btn btn-ghost', type: 'button', onclick: async () => {
       await api('/auth/logout', { method: 'POST' });
-      session.me = null;
+      setMe(null);
       modal.close();
       if (onDone) onDone(null);
     } }, icon('logout'), 'Sign out')
@@ -93,7 +93,7 @@ export function openProfileModal({ onDone } = {}) {
     err.textContent = '';
     try {
       const res = await api('/auth/profile', { method: 'PATCH', body: { name: name.value, color } });
-      session.me = res.me;
+      setMe(res.me);
       rememberName(res.me.name);
       modal.close();
       if (onDone) onDone(res.me);
@@ -121,9 +121,10 @@ export function mountAccount(host, { onChange } = {}) {
     }
     if (me) {
       host.append(h('button', {
-        class: 'btn btn-ghost btn-sm', type: 'button', title: 'Edit your name and color',
+        class: 'btn btn-ghost btn-sm', type: 'button',
+        title: me.kind === 'user' ? 'Edit your name and color' : 'You are using a guest nickname. Click to change it.',
         onclick: () => openProfileModal({ onDone: () => { render(); onChange && onChange(); } }),
-      }, avatar(me, 22), h('span', { dir: 'auto' }, me.name)));
+      }, avatar(me, 22), h('span', { dir: 'auto' }, me.name), me.kind !== 'user' && h('span', { class: 'role' }, 'Guest')));
     }
   };
   render();

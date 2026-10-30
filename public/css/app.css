@@ -117,6 +117,13 @@ label.lbl { display: block; font-size: 13px; font-weight: 600; color: var(--mute
 
 /* ---------- landing ---------- */
 
+/* Signed-in people do not need the guest bits of the ticket. This is driven by <html data-kind>, which a
+   tiny script in <head> sets from the last answer the server gave, so a returning user never sees the
+   guest version flash by while the page is still asking who they are. */
+html[data-kind='user'] #nick-row, html[data-kind='user'] #guest-note { display: none; }
+#user-only { display: none; }
+html[data-kind='user'] #user-only { display: grid; }
+
 .landing { min-height: 100dvh; display: flex; flex-direction: column;
   background:
     radial-gradient(900px 520px at 78% 8%, rgba(255, 181, 71, .13), transparent 62%),
