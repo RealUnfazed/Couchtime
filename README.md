@@ -4,7 +4,7 @@ Watch videos together in sync. Make a room, send the link, and everyone's player
 
 Node.js + MongoDB. Runs on your own machine, on any VPS, or on Vercel, and every piece it needs has a free tier that covers a handful of friends.
 
-## What it does
+## What it does?
 
 - **Rooms with invite links.** Guests join with just a nickname. Rooms can have a password, and the host picks who may control playback (everyone, host and moderators, or host only).
 - **Synced playback.** Play, pause, seek, speed and "change the video" are shared. People who join late or reconnect land on the right second. Sources: YouTube, Vimeo, and direct video or audio links (`.mp4`, `.webm`, `.m3u8` HLS and more).
