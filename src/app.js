@@ -95,7 +95,16 @@ app.use('/api', api);
 
 // ---------- static files (local / VPS). On Vercel the CDN serves /public and these never run. ----------
 
-app.use(express.static(PUBLIC, { maxAge: config.isProd ? '5m' : 0, extensions: ['html'] }));
+app.use(express.static(PUBLIC, {
+  maxAge: config.isProd ? '5m' : 0,
+  extensions: ['html'],
+  setHeaders(res, file) {
+    const name = path.basename(file);
+    // Browsers must always ask for a fresh service worker, or updates to it would never arrive.
+    if (name === 'sw.js') res.setHeader('Cache-Control', 'no-cache');
+    if (name === 'manifest.webmanifest') res.setHeader('Content-Type', 'application/manifest+json');
+  },
+}));
 app.get('/r/:id', (_req, res) => res.sendFile(path.join(PUBLIC, 'room.html')));
 
 module.exports = app;

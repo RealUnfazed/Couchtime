@@ -14,6 +14,7 @@ Node.js + MongoDB. Runs on your own machine, on any VPS, or on Vercel, and every
 - **Voice, camera, screen share.** WebRTC between browsers, with speaking indicators. Screen share can include tab audio.
 - **Accounts (optional).** Rooms that never expire, your own room address (`/r/movie-club`), the same name and color everywhere. Rooms you made as a guest move into your account when you sign in.
 - **Moderation.** Host can promote moderators and remove people.
+- **Installable app (PWA).** Install it from the browser to get its own window and icon, with a friendly offline page. See [Install it as an app](#install-it-as-an-app).
 
 ## The one tricky part: Vercel has no WebSockets
 
@@ -60,6 +61,31 @@ Keyboard (not while typing in a box): `Space` or `K` play/pause, `J` / `L` back 
 If the room is set so that only the host may control playback, everyone else sees the bar dimmed and pressing a shared control explains why. Volume, full screen and theater still work for them.
 
 Every provider is hidden behind the same small adapter (`public/js/players.js`), so adding another source means one class with `play`, `pause`, `seek`, `getTime`, `getDuration`, `getBuffered`, `setAudio` and friends.
+
+## Install it as an app
+
+Couchtime is a progressive web app: a manifest, icons and a service worker, with no app store involved.
+
+- **Chrome, Edge, Android:** use the **Install** button in the top bar, or the install icon in the address bar. On Android, "Add to Home screen" works too.
+- **iPhone and iPad (Safari):** Share, then **Add to Home Screen**. There is no Install button on iOS, because Safari does not offer one to pages. Not tested on iOS: screen sharing is not available in Safari at all, and voice in a home-screen app may behave differently from Safari, so use Safari if a call misbehaves.
+- It needs `https://` or `localhost`. Vercel gives you https. A plain `http://192.168.x.x` address cannot install or run a service worker.
+
+What the service worker (`public/sw.js`) does:
+
+| It does | It never touches |
+|---|---|
+| Keeps the static files (CSS, JavaScript, fonts, icons) for faster repeat visits | `/api/*`: rooms, chat, playback state, TURN credentials are always live |
+| Loads those files **network first**, so a new deploy shows up on the next load and the saved copy is only a fallback | `/socket.io/*` and every other website: Ably, YouTube, Vimeo, hls.js and your video files |
+| Shows an "offline" page, which reloads itself when the connection returns, instead of the browser's error page | Video and audio range requests |
+
+So there is no offline mode for watching: a room needs the internet to keep everyone in sync. The worker is there for installation, speed and a friendlier failure.
+
+Things to know when you change the app:
+
+- **Rename it:** edit `name`, `short_name` and the titles in `public/manifest.webmanifest` and `public/offline.html`, plus `APP_NAME` and the `<title>` in the two HTML files.
+- **New icons:** edit the colors in `scripts/make-icons.js`, then run `node scripts/make-icons.js`. It writes `public/icons/` (needs `playwright-core` and a Chromium, set `CHROME_PATH` if needed).
+- **Changing the saved file list** in `PRECACHE` inside `public/sw.js`: bump `VERSION` in that file, so the old cache is removed. Normal code changes need nothing, because of network first.
+- **Updates:** browsers re-check `sw.js` on every visit. The Vercel config and the local server both send it with `Cache-Control: no-cache` so a new version is picked up straight away.
 
 ## Run it locally
 
@@ -124,7 +150,7 @@ The server hands out short-lived credentials through `GET /api/ice`, so no TURN 
 | `REALTIME_DRIVER` | `ably` on Vercel, else `socketio` | |
 | `ABLY_API_KEY` | none | Needed when the driver is `ably` |
 | `TURN_PROVIDER` | none (STUN only) | `cloudflare`, `metered`, `coturn`, `static` |
-| `APP_NAME` | `Couchtime` | Shown in the UI. Also edit `<title>` in the two HTML files if you rename it. |
+| `APP_NAME` | `Couchtime` | Shown in the UI. Also edit `<title>` in the two HTML files, and the name in `manifest.webmanifest` and `offline.html`, if you rename it. |
 | `ROOM_IDLE_HOURS` | `24` | Guest rooms are deleted after this long without visitors |
 | `CHAT_KEEP_DAYS` | `7` | Chat history lifetime |
 | `PORT` | `3000` | Local server only |
@@ -165,7 +191,7 @@ The server stores one anchor per room: `playing`, `position`, `updatedAt`, `rate
 ```
 server.js            long-running entry (local, VPS): Express + Socket.IO
 api/index.js         Vercel entry: the same Express app
-vercel.json          routes /api/* to the function and /r/:id to the room page
+vercel.json          routes /api/* to the function and /r/:id to the room page, and sets headers for sw.js and the manifest
 src/app.js           middleware, routes, error handling
 src/routes/          auth, rooms (state, queue, chat, moderation), health/ice/realtime token
 src/realtime/        socketio.js and ably.js behind one small interface
@@ -175,7 +201,13 @@ public/              the whole front end: plain HTML, CSS and ES modules, no bui
 public/js/sync.js    the sync engine
 public/js/players.js YouTube, Vimeo and file/HLS adapters
 public/js/controls.js the control bar, keyboard shortcuts, volume
+public/js/pwa.js     registers the service worker, the Install button
+public/sw.js         the service worker (static files, offline page)
+public/manifest.webmanifest  app name, colors and icons for installing
+public/offline.html  shown when the network is gone
+public/icons/        app icons, made by scripts/make-icons.js
 public/js/rtc.js     voice, camera and screen share
+scripts/make-icons.js  regenerates public/icons
 test/e2e.js          two real browsers in one room (see below)
 ```
 
@@ -187,7 +219,7 @@ With the app and MongoDB running:
 BASE=http://localhost:3000 npm run test:e2e
 ```
 
-It opens two browsers (sized like a 1368x768 laptop screen) and checks synced play, pause, seek and late joining, the control bar and keyboard shortcuts, the YouTube adapter (against a stand-in for YouTube's player API, since the real one needs the internet), chat, the queue and auto-advance, host-only mode, voice, camera and screen share between the two, that camera tiles keep a readable size from 1920x1080 down to a phone, full screen and theater mode, removing a person, accounts, room passwords and cross-site request blocking. It needs `ffmpeg` (to make a small test video) and a Chromium. Set `CHROME_PATH` if Playwright's own browser is not installed.
+It opens two browsers (sized like a 1368x768 laptop screen) and checks synced play, pause, seek and late joining, the control bar and keyboard shortcuts, the YouTube adapter (against a stand-in for YouTube's player API, since the real one needs the internet), chat, the queue and auto-advance, host-only mode, voice, camera and screen share between the two, that camera tiles keep a readable size from 1920x1080 down to a phone, full screen and theater mode, removing a person, accounts, room passwords, cross-site request blocking, and the PWA pieces (manifest and icons, service worker takeover, Chrome's installability check, that live data is never saved, the offline page and the Install button). It needs `ffmpeg` (to make a small test video) and a Chromium. Set `CHROME_PATH` if Playwright's own browser is not installed.
 
 ## Credits
 

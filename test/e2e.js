@@ -511,6 +511,91 @@ async function joinRoom(page, url, name) {
     await G.ctx.close();
   });
 
+  await step('PWA: manifest, icons and service worker are served correctly', async () => {
+    const C = await mk();
+    const get = (u) => C.ctx.request.get(BASE + u);
+    const m = await get('/manifest.webmanifest');
+    if (!m.ok() || !/manifest\+json/.test(m.headers()['content-type'])) throw new Error(`manifest: ${m.status()} ${m.headers()['content-type']}`);
+    const man = await m.json();
+    for (const k of ['name', 'short_name', 'start_url', 'scope', 'icons']) if (!man[k]) throw new Error(`manifest has no ${k}`);
+    if (man.display !== 'standalone') throw new Error(`display is ${man.display}`);
+    const has = (size, purpose) => man.icons.some((i) => i.sizes === size && i.type === 'image/png' && i.purpose === purpose);
+    if (!has('192x192', 'any') || !has('512x512', 'any') || !has('512x512', 'maskable')) throw new Error('manifest lacks the 192, 512 and maskable 512 icons');
+    for (const icon of man.icons.filter((i) => i.type === 'image/png')) {
+      const r = await get(icon.src);
+      if (!r.ok()) throw new Error(`${icon.src} gave ${r.status()}`);
+      const b = await r.body();
+      const [w, h] = [b.readUInt32BE(16), b.readUInt32BE(20)]; // PNG header: width and height
+      if (`${w}x${h}` !== icon.sizes) throw new Error(`${icon.src} is ${w}x${h}, manifest says ${icon.sizes}`);
+    }
+    const sw = await get('/sw.js');
+    if (!/javascript/.test(sw.headers()['content-type']) || !/no-cache/.test(sw.headers()['cache-control'])) throw new Error(`sw.js headers: ${JSON.stringify(sw.headers())}`);
+    for (const url of ['/', '/r/anything']) {
+      await C.page.goto(BASE + url);
+      if (!(await C.page.$('link[rel=manifest]')) || !(await C.page.$('link[rel=apple-touch-icon]'))) throw new Error(`${url} does not link the manifest and the touch icon`);
+    }
+    await C.ctx.close();
+  });
+
+  await step('PWA: the service worker takes over and Chrome sees an installable app', async () => {
+    const C = await mk();
+    await C.page.goto(BASE);
+    await C.page.evaluate(() => navigator.serviceWorker.ready);
+    await C.page.reload();
+    await waitFor(async () => C.page.evaluate(() => !!navigator.serviceWorker.controller), { label: 'the service worker to control the page' });
+    const cdp = await C.ctx.newCDPSession(C.page);
+    const { installabilityErrors } = await cdp.send('Page.getInstallabilityErrors');
+    // Playwright's browser profile is temporary, so Chrome always adds "in-incognito". Anything else is a real problem.
+    const real = installabilityErrors.filter((e) => e.errorId !== 'in-incognito');
+    if (real.length) throw new Error(`not installable: ${JSON.stringify(real)}`);
+    const { errors } = await cdp.send('Page.getAppManifest');
+    if (errors.length) throw new Error(`manifest problems: ${JSON.stringify(errors)}`);
+    await C.ctx.close();
+  });
+
+  await step('PWA: live data is never saved, and with no network the offline page appears and recovers by itself', async () => {
+    const C = await mk();
+    await C.page.goto(BASE);
+    await C.page.evaluate(() => navigator.serviceWorker.ready);
+    await C.page.reload();
+    await waitFor(async () => C.page.evaluate(() => !!navigator.serviceWorker.controller));
+    await C.page.evaluate(() => fetch('/api/config').then((r) => r.json())); // a live API call while the worker is in charge
+    const saved = await C.page.evaluate(async () => (await (await caches.open('couchtime-v1')).keys()).map((r) => new URL(r.url).pathname));
+    if (!saved.includes('/offline.html') || !saved.includes('/css/app.css')) throw new Error(`static files were not saved: ${saved}`);
+    const live = saved.filter((u) => u.startsWith('/api/') || u.startsWith('/socket.io/'));
+    if (live.length) throw new Error(`live data was saved: ${live}`);
+
+    await C.ctx.setOffline(true);
+    const api = await C.page.evaluate(() => fetch('/api/config').then(() => 'served', () => 'failed'));
+    if (api !== 'failed') throw new Error('the API answered while offline, so it was served from a saved copy');
+    await C.page.goto(`${BASE}/r/abcd`);
+    if ((await C.page.textContent('h1')) !== 'Cannot reach Couchtime') throw new Error('no offline page');
+    const art = await C.page.evaluate(() => { const i = document.querySelector('main img'); return i.complete && i.naturalWidth > 0; });
+    if (!art) throw new Error('the offline page lost its icon');
+    await C.ctx.setOffline(false);
+    await waitFor(async () => C.page.evaluate(() => !document.querySelector('#retry')), { timeout: 8000, label: 'the page to reload itself once back online' });
+    await C.ctx.close();
+  });
+
+  await step('PWA: the Install button shows only when the browser offers installation', async () => {
+    const C = await mk();
+    await C.page.goto(BASE);
+    await C.page.waitForSelector('#account button');
+    if (await C.page.$('#install-btn')) throw new Error('the Install button showed before the browser offered anything');
+    await C.page.evaluate(() => {
+      const e = new Event('beforeinstallprompt', { cancelable: true });
+      window.__prompted = false;
+      e.prompt = () => { window.__prompted = true; };
+      e.userChoice = Promise.resolve({ outcome: 'accepted' });
+      window.dispatchEvent(e);
+    });
+    await C.page.waitForSelector('#install-btn');
+    await C.page.click('#install-btn');
+    await waitFor(async () => C.page.evaluate(() => window.__prompted === true), { label: 'the install prompt to open' });
+    await waitFor(async () => !(await C.page.$('#install-btn')), { label: 'the button to go away after use' });
+    await C.ctx.close();
+  });
+
   await step('cross-site writes are refused', async () => {
     const res = await A.ctx.request.post(`${BASE}/api/rooms`, { data: { name: 'x' }, headers: { Origin: 'https://evil.example' } });
     if (res.status() !== 403) throw new Error(`expected 403, got ${res.status()}`);

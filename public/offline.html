@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cannot reach Couchtime</title>
+  <meta name="theme-color" content="#15101c">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <style>
+    @font-face { font-family: 'Bricolage'; src: url(/fonts/bricolage.woff2) format('woff2-variations'); font-weight: 200 800; font-display: swap; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100dvh; display: grid; place-items: center; padding: 24px; text-align: center;
+      background: radial-gradient(800px 500px at 50% 0%, rgba(255, 181, 71, .14), transparent 65%), #15101c;
+      color: #f4eff9; font: 400 16px/1.55 system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+    }
+    main { max-width: 420px; }
+    img { width: 84px; height: 84px; border-radius: 22px; animation: pulse 2.4s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 181, 71, .35); } 50% { transform: scale(1.05); box-shadow: 0 0 0 18px rgba(255, 181, 71, 0); } }
+    h1 { margin: 22px 0 8px; font: 800 30px/1.1 'Bricolage', system-ui, sans-serif; letter-spacing: -.03em; }
+    p { margin: 0 0 24px; color: #ac9fbf; }
+    button {
+      font: inherit; font-weight: 700; cursor: pointer; padding: 12px 22px; border-radius: 10px; border: 1px solid #ffb547;
+      background: #ffb547; color: #2b1a02; transition: background .15s, transform .1s;
+    }
+    button:hover { background: #ffc873; }
+    button:active { transform: translateY(1px); }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="/icons/icon-192.png" alt="" width="84" height="84">
+    <h1>Cannot reach Couchtime</h1>
+    <p>Check your internet connection. Rooms need a live connection to keep everyone on the same second.</p>
+    <button type="button" id="retry">Try again</button>
+  </main>
+  <script>
+    document.getElementById('retry').addEventListener('click', function () { location.reload(); });
+    window.addEventListener('online', function () { location.reload(); });
+  </script>
+</body>
+</html>
